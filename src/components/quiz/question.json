@@ -1,0 +1,26 @@
+{
+  "collectionName": "components_quiz_questions",
+  "info": {
+    "displayName": "Question",
+    "icon": "question",
+    "description": "MCQ Question component for Quizzes"
+  },
+  "options": {},
+  "attributes": {
+    "questionText": {
+      "type": "text",
+      "required": true
+    },
+    "options": {
+      "type": "json",
+      "required": true
+    },
+    "correctAnswerIndex": {
+      "type": "integer",
+      "required": true
+    },
+    "explanation": {
+      "type": "text"
+    }
+  }
+}

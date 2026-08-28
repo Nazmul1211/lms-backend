@@ -1,7 +1,8 @@
+# Node dependencies
 node_modules/
 .npm
 
-Strapi cache, build, uploads, and temp
+# Strapi cache, build, uploads, and temp
 .tmp/
 build/
 .cache/
@@ -9,20 +10,22 @@ build/
 public/uploads/
 dist/
 
-Environment variables
+# Environment variables
 .env
 .env.*
 
-Logs
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-OS files
+# OS files
 .DS_Store
 Thumbs.db
 
+# Markdown restrictions
 *.md
 !README.md
+!readme.md
