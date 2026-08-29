@@ -231,4 +231,74 @@ export default factories.createCoreController('api::course.course', ({ strapi })
             },
         });
     },
+
+
+
+    /**
+     * 5. GET /api/instructor/courses
+     * Returns all courses created by this instructor with enrolled students and progress
+     */
+    async getInstructorCourses(ctx: any) {
+        const user = ctx.state.user;
+        if (!user) {
+            return ctx.unauthorized('You must be logged in');
+        }
+
+        // Fetch courses where instructor is the current user
+        const courses = await strapi.documents('api::course.course').findMany({
+            filters: {
+                instructor: { id: user.id },
+            } as any,
+            populate: ['lessons', 'quizzes', 'enrollments', 'enrollments.student'] as any,
+        });
+
+        const detailedCourses = (courses || []).map((c: any) => ({
+            id: c.documentId,
+            title: c.title,
+            slug: c.slug,
+            level: c.level,
+            category: c.category,
+            totalLessons: c.lessons ? c.lessons.length : 0,
+            totalQuizzes: c.quizzes ? c.quizzes.length : 0,
+            totalEnrolledStudents: c.enrollments ? c.enrollments.length : 0,
+            enrolledStudents: (c.enrollments || []).map((e: any) => ({
+                enrollmentId: e.documentId,
+                studentId: e.student?.id,
+                studentName: e.student?.username,
+                studentEmail: e.student?.email,
+                progressPercentage: e.progressPercentage,
+                enrolledAt: e.enrolledAt,
+                status: e.enrollmentStatus,
+            })),
+        }));
+
+        return ctx.send({
+            data: detailedCourses,
+        });
+    },
+
+    /**
+     * 6. POST /api/courses
+     * Overrides course creation to auto-assign instructor if created by an Instructor
+     */
+    async create(ctx: any) {
+        const user = ctx.state.user;
+        if (!user) {
+            return ctx.unauthorized('Authentication required');
+        }
+
+        const { data } = ctx.request.body;
+
+        const newCourse = await strapi.documents('api::course.course').create({
+            data: {
+                ...data,
+                instructor: user.id,
+            } as any,
+        });
+
+        return ctx.send({
+            message: 'Course created successfully',
+            data: newCourse,
+        });
+    }
 }));
