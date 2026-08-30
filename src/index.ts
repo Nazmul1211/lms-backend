@@ -218,7 +218,7 @@ export default {
         }
 
         // Course 2
-        await strapi.documents('api::course.course').create({
+        const course2 = await strapi.documents('api::course.course').create({
           data: {
             title: 'Headless CMS Architecture with Strapi 5 & PostgreSQL',
             slug: 'headless-cms-strapi-5',
@@ -226,6 +226,105 @@ export default {
             coverImageUrl: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&auto=format&fit=crop&q=60',
             level: 'beginner',
             category: 'Backend Development',
+            instructor: instructor.id,
+          } as any,
+          status: 'published',
+        });
+
+        // Lessons for Course 2
+        const course2Lessons = [
+          {
+            title: 'Content Modeling & Database Relations',
+            slug: 'content-modeling-and-relations',
+            order: 1,
+            typeOfContent: 'text',
+            durationMinutes: 15,
+            course: (course2 as any).documentId,
+          },
+          {
+            title: 'Custom Controllers & Core API Routes',
+            slug: 'custom-controllers-and-routes',
+            order: 2,
+            typeOfContent: 'text',
+            durationMinutes: 20,
+            course: (course2 as any).documentId,
+          },
+          {
+            title: 'Deploying Strapi on Railway with PostgreSQL',
+            slug: 'deploying-strapi-on-railway',
+            order: 3,
+            typeOfContent: 'video',
+            videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            durationMinutes: 18,
+            course: (course2 as any).documentId,
+          },
+        ];
+
+        for (const l of course2Lessons) {
+          await strapi.documents('api::lesson.lesson').create({
+            data: l as any,
+            status: 'published',
+          });
+        }
+
+        // Course 3
+        const course3 = await strapi.documents('api::course.course').create({
+          data: {
+            title: 'Full-Stack Security & Role-Based Access Control',
+            slug: 'security-rbac-mastery',
+            description: 'Implement defense-in-depth security with token validation, route guards, API middleware, and audit logs.',
+            coverImageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=60',
+            level: 'advanced',
+            category: 'Security',
+            instructor: instructor.id,
+          } as any,
+          status: 'published',
+        });
+
+        // Lessons for Course 3
+        const course3Lessons = [
+          {
+            title: 'JWT Token Anatomy & Safe Storage',
+            slug: 'jwt-token-anatomy',
+            order: 1,
+            typeOfContent: 'text',
+            durationMinutes: 20,
+            course: (course3 as any).documentId,
+          },
+          {
+            title: 'Backend Policy Guards & Route Interceptors',
+            slug: 'backend-policy-guards',
+            order: 2,
+            typeOfContent: 'text',
+            durationMinutes: 25,
+            course: (course3 as any).documentId,
+          },
+          {
+            title: 'Building a 4-Tier RBAC Architecture',
+            slug: 'building-4-tier-rbac',
+            order: 3,
+            typeOfContent: 'text',
+            durationMinutes: 30,
+            course: (course3 as any).documentId,
+          },
+        ];
+
+        for (const l of course3Lessons) {
+          await strapi.documents('api::lesson.lesson').create({
+            data: l as any,
+            status: 'published',
+          });
+        }
+
+        // Course 4
+        const course4 = await strapi.documents('api::course.course').create({
+          data: {
+            title: 'Modern Tailwind CSS v4 & Design Systems',
+            slug: 'tailwind-design-systems',
+            description: 'Build accessible, responsive UI component libraries with CSS-first configuration and dark mode tokens.',
+            coverImageUrl: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=800&auto=format&fit=crop&q=60',
+            level: 'beginner',
+            category: 'Design & UI',
             instructor: instructor.id,
           } as any,
           status: 'published',
@@ -256,6 +355,31 @@ export default {
                 options: ['Cookie: jwt_token', 'Authorization: Bearer <token>', 'Token: <token>', 'Authentication: <token>'],
                 correctAnswerIndex: 1,
                 explanation: 'Standard token authentication uses the "Authorization: Bearer <token>" header.',
+              },
+            ],
+          } as any,
+          status: 'published',
+        });
+
+        // Sample Quiz for Course 2
+        await strapi.documents('api::quiz.quiz').create({
+          data: {
+            title: 'Headless CMS Architecture Assessment',
+            description: 'Validate your understanding of Strapi 5 APIs and controller customizations.',
+            passingScore: 70,
+            course: (course2 as any).documentId,
+            questions: [
+              {
+                questionText: 'Which Strapi layer handles custom business logic before returning data to the client?',
+                options: ['Vite Admin Build', 'Controller / Service layer', 'Database Schema migration', 'Nginx reverse proxy'],
+                correctAnswerIndex: 1,
+                explanation: 'Strapi controllers and services are designed to house business logic and data sanitization.',
+              },
+              {
+                questionText: 'How are public API permissions granted in Strapi 5?',
+                options: ['Hardcoded in .env only', 'Via Users & Permissions Plugin roles in up_permissions', 'In robots.txt', 'Through package.json scripts'],
+                correctAnswerIndex: 1,
+                explanation: 'Permissions are stored in the database up_permissions table and mapped to Public/Authenticated roles.',
               },
             ],
           } as any,
