@@ -5,7 +5,12 @@ const config = ({ env }: Core.Config.Shared.ConfigParams): Core.Config.Server =>
   port: env.int('PORT', 1337),
   url: env('PUBLIC_URL', undefined),
   app: {
-    keys: env.array('APP_KEYS')!,
+    keys: env.array('APP_KEYS', [
+      'iXs9Sg1k+dnIdTlmRgiPYQ==',
+      'fCkM/PIc8AGlshOeObv4Cw==',
+      'w8jqw9rooDjvKZd07WiBjg==',
+      'zI0MVWKiBLLvjxsKWCDzHw=='
+    ]),
   },
   webhooks: {
     populateRelations: env.bool('WEBHOOKS_POPULATE_RELATIONS', false),
