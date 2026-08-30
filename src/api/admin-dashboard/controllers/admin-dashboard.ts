@@ -47,10 +47,18 @@ export default {
                 populate: ['student', 'course'] as any,
             });
 
+            const roleBreakdown = {
+                students: usersByRole['Student'] || 0,
+                instructors: usersByRole['Instructor'] || 0,
+                contentManagers: usersByRole['Content Manager'] || 0,
+                admins: usersByRole['Admin'] || 0,
+            };
+
             return ctx.send({
                 data: {
                     totalUsers: allUsers.length,
                     usersByRole,
+                    roleBreakdown,
                     totalCourses,
                     totalLessons,
                     totalEnrollments,

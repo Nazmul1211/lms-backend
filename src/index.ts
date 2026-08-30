@@ -103,10 +103,21 @@ export default {
 
       // 2. Check and seed test users with provider: 'local'
       const testUsers = [
+        // Super Admin
         { username: 'admin_user', email: 'admin@lms.com', password: 'Password123!', role: roles['Admin']?.id },
+        
+        // Content Managers
         { username: 'content_manager', email: 'manager@lms.com', password: 'Password123!', role: roles['Content Manager']?.id },
+        { username: 'elena_editor', email: 'elena@lms.com', password: 'Password123!', role: roles['Content Manager']?.id },
+        
+        // Instructors
         { username: 'instructor_alex', email: 'instructor@lms.com', password: 'Password123!', role: roles['Instructor']?.id },
+        { username: 'marcus_backend', email: 'marcus@lms.com', password: 'Password123!', role: roles['Instructor']?.id },
+        
+        // Students with different learning profiles
         { username: 'student_sarah', email: 'student@lms.com', password: 'Password123!', role: roles['Student']?.id },
+        { username: 'john_doe', email: 'john@lms.com', password: 'Password123!', role: roles['Student']?.id },
+        { username: 'emily_beginner', email: 'emily@lms.com', password: 'Password123!', role: roles['Student']?.id },
       ];
 
       const createdUsers: Record<string, any> = {};
