@@ -28,6 +28,79 @@ export default {
         roles[name] = role;
       }
 
+      // Fetch Public & Authenticated default roles
+      const publicRole = await strapi.db.query('plugin::users-permissions.role').findOne({
+        where: { type: 'public' },
+      });
+      const authenticatedRole = await strapi.db.query('plugin::users-permissions.role').findOne({
+        where: { type: 'authenticated' },
+      });
+
+      // 1.1 Automatically Grant API Permissions
+      const publicActions = [
+        'api::course.course.find',
+        'api::course.course.findOne',
+        'api::blog-post.blog-post.find',
+        'api::blog-post.blog-post.findOne',
+        'api::lesson.lesson.find',
+        'api::lesson.lesson.findOne',
+        'api::quiz.quiz.find',
+        'api::quiz.quiz.findOne',
+        'api::quiz.quiz.getStudentQuiz',
+        'plugin::users-permissions.auth.callback',
+        'plugin::users-permissions.auth.register',
+        'plugin::users-permissions.auth.connect',
+      ];
+
+      const authenticatedActions = [
+        ...publicActions,
+        'api::course.course.create',
+        'api::course.course.update',
+        'api::course.course.delete',
+        'api::course.course.enrollCourse',
+        'api::course.course.getMyCourses',
+        'api::course.course.updateLessonProgress',
+        'api::course.course.getCourseProgress',
+        'api::course.course.getInstructorCourses',
+        'api::quiz.quiz.create',
+        'api::quiz.quiz.update',
+        'api::quiz.quiz.delete',
+        'api::quiz.quiz.getStudentQuiz',
+        'api::quiz.quiz.submitQuiz',
+        'api::lesson.lesson.create',
+        'api::lesson.lesson.update',
+        'api::lesson.lesson.delete',
+        'api::blog-post.blog-post.create',
+        'api::blog-post.blog-post.update',
+        'api::blog-post.blog-post.delete',
+        'api::admin-dashboard.admin-dashboard.getStats',
+        'api::admin-dashboard.admin-dashboard.getUsers',
+        'api::admin-dashboard.admin-dashboard.updateUserRole',
+        'plugin::users-permissions.user.me',
+        'plugin::users-permissions.user.find',
+        'plugin::users-permissions.user.findOne',
+      ];
+
+      const grantRolePermissions = async (roleObj: any, actions: string[]) => {
+        if (!roleObj || !roleObj.id) return;
+        for (const action of actions) {
+          const existing = await strapi.db.query('plugin::users-permissions.permission').findOne({
+            where: { action, role: roleObj.id },
+          });
+          if (!existing) {
+            await strapi.db.query('plugin::users-permissions.permission').create({
+              data: { action, role: roleObj.id },
+            });
+          }
+        }
+      };
+
+      if (publicRole) await grantRolePermissions(publicRole, publicActions);
+      if (authenticatedRole) await grantRolePermissions(authenticatedRole, authenticatedActions);
+      for (const rName of roleNames) {
+        if (roles[rName]) await grantRolePermissions(roles[rName], authenticatedActions);
+      }
+
       // 2. Check and seed test users with provider: 'local'
       const testUsers = [
         { username: 'admin_user', email: 'admin@lms.com', password: 'Password123!', role: roles['Admin']?.id },
@@ -95,6 +168,7 @@ export default {
             category: 'Frontend Development',
             instructor: instructor.id,
           } as any,
+          status: 'published',
         });
 
         // Lessons for Course 1
@@ -138,6 +212,7 @@ export default {
         for (const l of course1Lessons) {
           const lesson = await strapi.documents('api::lesson.lesson').create({
             data: l as any,
+            status: 'published',
           });
           createdLessons.push(lesson);
         }
@@ -153,6 +228,7 @@ export default {
             category: 'Backend Development',
             instructor: instructor.id,
           } as any,
+          status: 'published',
         });
 
         // 4. Create Sample Quiz for Course 1
@@ -183,6 +259,7 @@ export default {
               },
             ],
           } as any,
+          status: 'published',
         });
 
         // 5. Create Sample Blog Posts (2 Published, 1 Draft)
@@ -199,6 +276,7 @@ export default {
             blogPostPublishedAt: new Date().toISOString(),
             author: manager.id,
           } as any,
+          status: 'published',
         });
 
         await strapi.documents('api::blog-post.blog-post').create({
@@ -211,6 +289,7 @@ export default {
             blogPostPublishedAt: new Date().toISOString(),
             author: admin.id,
           } as any,
+          status: 'published',
         });
 
         // Draft blog post (hidden from public/students)
@@ -223,6 +302,7 @@ export default {
             isPublished: false,
             author: manager.id,
           } as any,
+          status: 'draft',
         });
 
         // 6. Create Initial Enrollment & 50% Progress for student_sarah

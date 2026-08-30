@@ -12,35 +12,52 @@ export default factories.createCoreController('api::quiz.quiz', ({ strapi }) => 
     async getStudentQuiz(ctx) {
         const { id } = ctx.params;
 
-        // Find quiz with questions populated
-        const quiz = await strapi.documents('api::quiz.quiz').findOne({
+        // Try find quiz by documentId
+        let quiz: any = await strapi.documents('api::quiz.quiz').findOne({
             documentId: id,
             populate: ['questions', 'course'] as any,
         });
 
+        // Fallback: try finding by numeric id or by associated course documentId/slug
         if (!quiz) {
-            return ctx.notFound('Quiz not found');
+            const allQuizzes = await strapi.documents('api::quiz.quiz').findMany({
+                populate: ['questions', 'course'] as any,
+            });
+
+            quiz = (allQuizzes || []).find((q: any) => 
+                q.documentId === id ||
+                String(q.id) === String(id) ||
+                q.course?.documentId === id ||
+                String(q.course?.id) === String(id) ||
+                q.course?.slug === id
+            );
         }
 
-        const anyQuiz = quiz as any;
-        const questions = anyQuiz.questions || [];
+        if (!quiz) {
+            return ctx.notFound('Quiz not found for this course');
+        }
+
+        const questions = quiz.questions || [];
 
         // Sanitize questions: strip correctAnswerIndex and explanation
         const sanitizedQuestions = questions.map((q: any, index: number) => ({
+            id: q.id || index + 1,
             questionIndex: index,
-            questionText: q.questionText,
-            options: q.options,
+            question: q.questionText || q.question || '',
+            questionText: q.questionText || q.question || '',
+            options: q.options || [],
         }));
 
         return ctx.send({
-            data: {
-                id: anyQuiz.documentId,
-                title: anyQuiz.title,
-                description: anyQuiz.description,
-                passingScore: anyQuiz.passingScore,
-                totalQuestions: sanitizedQuestions.length,
-                questions: sanitizedQuestions,
-            },
+            id: quiz.documentId,
+            quizId: quiz.documentId,
+            courseId: quiz.course?.documentId || id,
+            title: quiz.title,
+            description: quiz.description,
+            passingScorePercentage: quiz.passingScore || 70,
+            passingScore: quiz.passingScore || 70,
+            totalQuestions: sanitizedQuestions.length,
+            questions: sanitizedQuestions,
         });
     },
 
@@ -55,24 +72,38 @@ export default factories.createCoreController('api::quiz.quiz', ({ strapi }) => 
         }
 
         const { id } = ctx.params;
-        const { answers } = ctx.request.body; // Expects: [{ questionIndex: 0, selectedOptionIndex: 1 }, ...]
+        const body = ctx.request.body || {};
+        const rawAnswers = body.answers;
 
-        if (!answers || !Array.isArray(answers)) {
-            return ctx.badRequest('Answers array is required');
+        if (!rawAnswers) {
+            return ctx.badRequest('Answers payload is required');
         }
 
         // Fetch full quiz from DB with correct answers
-        const quiz = await strapi.documents('api::quiz.quiz').findOne({
+        let quiz: any = await strapi.documents('api::quiz.quiz').findOne({
             documentId: id,
             populate: ['questions', 'course'] as any,
         });
 
         if (!quiz) {
+            const allQuizzes = await strapi.documents('api::quiz.quiz').findMany({
+                populate: ['questions', 'course'] as any,
+            });
+
+            quiz = (allQuizzes || []).find((q: any) => 
+                q.documentId === id ||
+                String(q.id) === String(id) ||
+                q.course?.documentId === id ||
+                String(q.course?.id) === String(id) ||
+                q.course?.slug === id
+            );
+        }
+
+        if (!quiz) {
             return ctx.notFound('Quiz not found');
         }
 
-        const anyQuiz = quiz as any;
-        const questions = anyQuiz.questions || [];
+        const questions = quiz.questions || [];
         const totalQuestions = questions.length;
 
         if (totalQuestions === 0) {
@@ -81,28 +112,43 @@ export default factories.createCoreController('api::quiz.quiz', ({ strapi }) => 
 
         let correctCount = 0;
         const gradedBreakdown = questions.map((q: any, index: number) => {
-            const studentSubmission = answers.find((a: any) => a.questionIndex === index);
-            const selectedOptionIndex = studentSubmission ? studentSubmission.selectedOptionIndex : null;
-            const isCorrect = selectedOptionIndex === q.correctAnswerIndex;
+            let selectedOptionIndex: number | null = null;
+
+            if (Array.isArray(rawAnswers)) {
+                const found = rawAnswers.find((a: any) => a.questionIndex === index || a.questionId === q.id);
+                selectedOptionIndex = found ? found.selectedOptionIndex : null;
+            } else if (typeof rawAnswers === 'object') {
+                // Object map: { [questionId or index]: selectedOptionIndex }
+                const val = rawAnswers[q.id] !== undefined ? rawAnswers[q.id] : rawAnswers[index];
+                selectedOptionIndex = val !== undefined ? Number(val) : null;
+            }
+
+            const correctAnswerIndex = q.correctAnswerIndex !== undefined ? q.correctAnswerIndex : 0;
+            const isCorrect = selectedOptionIndex === correctAnswerIndex;
 
             if (isCorrect) {
                 correctCount++;
             }
 
             return {
+                questionId: q.id || index + 1,
                 questionIndex: index,
-                questionText: q.questionText,
-                options: q.options,
+                question: q.questionText || q.question || '',
+                questionText: q.questionText || q.question || '',
+                options: q.options || [],
+                selectedOption: selectedOptionIndex !== null ? selectedOptionIndex : -1,
                 selectedOptionIndex,
-                correctAnswerIndex: q.correctAnswerIndex,
+                correctOption: correctAnswerIndex,
+                correctAnswerIndex,
                 isCorrect,
-                explanation: q.explanation,
+                explanation: q.explanation || '',
             };
         });
 
-        // Calculate score percentage (e.g. 80%)
+        // Calculate score percentage
         const scorePercentage = Math.round((correctCount / totalQuestions) * 100);
-        const passed = scorePercentage >= (anyQuiz.passingScore || 70);
+        const passingScore = quiz.passingScore || 70;
+        const passed = scorePercentage >= passingScore;
 
         // Save QuizSubmission record in database
         const submission = await strapi.documents('api::quiz-submission.quiz-submission').create({
@@ -114,22 +160,25 @@ export default factories.createCoreController('api::quiz.quiz', ({ strapi }) => 
                 submittedAnswers: gradedBreakdown,
                 submittedAt: new Date().toISOString(),
                 student: user.id,
-                quiz: anyQuiz.documentId,
-                course: anyQuiz.course ? anyQuiz.course.documentId : null,
+                quiz: quiz.documentId,
+                course: quiz.course ? quiz.course.documentId : null,
             } as any,
         });
 
         return ctx.send({
             message: passed ? 'Congratulations! You passed the quiz.' : 'You did not pass. Keep practicing!',
-            data: {
-                submissionId: (submission as any).documentId,
-                score: scorePercentage,
-                correctCount,
-                totalQuestions,
-                passed,
-                passingScore: anyQuiz.passingScore,
-                breakdown: gradedBreakdown,
-            },
+            quizId: quiz.documentId,
+            courseId: quiz.course ? quiz.course.documentId : null,
+            scorePercentage,
+            score: scorePercentage,
+            correctCount,
+            totalQuestions,
+            passed,
+            passingScorePercentage: passingScore,
+            passingScore,
+            submittedAt: new Date().toISOString(),
+            results: gradedBreakdown,
+            breakdown: gradedBreakdown,
         });
     },
 }));
