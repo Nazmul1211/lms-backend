@@ -294,7 +294,10 @@ async function seedContentViaApi() {
           Authorization: `Bearer ${adminToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ data: c }),
+        body: JSON.stringify({
+          data: c,
+          status: 'published',
+        }),
       });
       if (res.ok) {
         console.log(`  🎓 Course Seeded: "${c.title}" -> Instructor ID ${c.instructor}`);
@@ -310,7 +313,17 @@ async function seedContentViaApi() {
       title: 'Why Headless CMS + Next.js is the Ultimate Stack in 2026',
       slug: 'headless-cms-nextjs-stack-2026',
       excerpt: 'Explore how decoupled content management paired with React Server Components delivers lightning-fast rendering, total design freedom, and seamless multi-channel publishing.',
-      content: 'Headless CMS architecture decouples backend content authoring from frontend presentation. Combined with Next.js 15, teams achieve instant page loads, top SEO rankings, and effortless scalability.',
+      content: [
+        {
+          type: 'paragraph',
+          children: [
+            {
+              type: 'text',
+              text: 'Headless CMS architecture decouples backend content authoring from frontend presentation. Combined with Next.js 15, teams achieve instant page loads, top SEO rankings, and effortless scalability.',
+            }
+          ]
+        }
+      ],
       coverImageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=60',
       category: 'Web Development',
       isPublished: true,
@@ -321,7 +334,17 @@ async function seedContentViaApi() {
       title: 'Top 5 Performance Optimizations for React Server Components',
       slug: 'top-5-rsc-optimizations',
       excerpt: 'Reduce bundle sizes, optimize streaming hydration, and leverage server actions for blisteringly fast user experiences.',
-      content: 'React Server Components (RSC) keep heavy dependencies on the server, drastically shrinking clientside JavaScript bundle sizes while enabling streamed responses.',
+      content: [
+        {
+          type: 'paragraph',
+          children: [
+            {
+              type: 'text',
+              text: 'React Server Components (RSC) keep heavy dependencies on the server, drastically shrinking clientside JavaScript bundle sizes while enabling streamed responses.',
+            }
+          ]
+        }
+      ],
       coverImageUrl: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=800&auto=format&fit=crop&q=60',
       category: 'Performance',
       isPublished: true,
@@ -332,7 +355,17 @@ async function seedContentViaApi() {
       title: 'Role-Based Access Control: Securing Next.js Apps at Scale',
       slug: 'rbac-securing-nextjs-scale',
       excerpt: 'A blueprint for implementing a multi-tier RBAC security policy covering JWT token hygiene, route interception, and backend guards.',
-      content: 'Security in full-stack applications demands defense in depth: client route guards, server middleware token inspection, and granular database entity permissions.',
+      content: [
+        {
+          type: 'paragraph',
+          children: [
+            {
+              type: 'text',
+              text: 'Security in full-stack applications demands defense in depth: client route guards, server middleware token inspection, and granular database entity permissions.',
+            }
+          ]
+        }
+      ],
       coverImageUrl: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&auto=format&fit=crop&q=60',
       category: 'Security',
       isPublished: true,
@@ -349,7 +382,10 @@ async function seedContentViaApi() {
           Authorization: `Bearer ${adminToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ data: b }),
+        body: JSON.stringify({
+          data: b,
+          status: 'published',
+        }),
       });
       if (res.ok) {
         console.log(`  ✍️  Blog Seeded: "${b.title}" -> Author ID ${b.author}`);
